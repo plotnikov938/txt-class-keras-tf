@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 import tensorflow as tf
 from tensorflow.python.keras.layers import Conv1D, Dense, Dropout, TimeDistributed
 tf = tf.compat.v1
@@ -53,6 +55,8 @@ class RelativeEmbeddingsLeft(tf.keras.layers.Layer):
                 shape=embedding_shape,
                 initializer=tf.random_normal_initializer(stddev=int(self.emb_size) ** -0.5),
                 name=self.scope)
+
+        self.built = True
 
     def call(self, inputs, **kwargs):
 
@@ -134,6 +138,8 @@ class RelativeEmbeddingsBoth(tf.keras.layers.Layer):
                 initializer=tf.random_normal_initializer(stddev=int(self.emb_size) ** -0.5),
                 name=self.scope)
 
+        self.built = True
+
     def call(self, inputs, trainable=None, **kwargs):
         if self.length != self.max_relative_position:
             # Pad first before slice to avoid using tf.cond.
@@ -179,6 +185,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.layer_num = layer_num
 
         self._relative_embeddings = {'left': RelativeEmbeddingsLeft, 'both': RelativeEmbeddingsBoth}
+        self._heads_share_emb = {'key': {True: [], False: []},
+                                 'value': {True: [], False: []}}
 
     def build(self, input_shapes):
 
@@ -189,12 +197,20 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.drop = Dropout(rate=self.drop_rate)
         self.dense_final = Dense(input_shapes[-1], None)
 
-        self.key_rel_pos_emb = self._prepare_relative_embeddings("relative_position", scope='key')
-        self.value_rel_pos_emb = self._prepare_relative_embeddings("relative_position", scope='value')
+        self._track_emb = []
+        self._track_dropout = {}
+        self.rel_pos_emb = {
+            'key': self._prepare_relative_embeddings("relative_position", scope='key'),
+            'value': self._prepare_relative_embeddings("relative_position", scope='value')
+        }
+
+        self.built = True
 
     def call(self, queries, keys, values,
              mask=None, training=None, **kwargs):
-
+        # Clear the dict
+        self._heads_share_emb = {'key': {True: [], False: []},
+                                 'value': {True: [], False: []}}
         # Linear Projections
         Q, K, V = [tf.concat(
             tf.split(dense(item)[:, None], self.attn_heads, axis=-1), axis=1) for dense, item in
@@ -203,14 +219,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         outputs = tf.matmul(Q, K, transpose_b=True)  # [batch_size, num_heads, q_size, k_size]
 
         # Add relative position embeddings
-        self._heads_share = []
-        self._heads_not_share = []
-        # self._prepare_relative_embeddings("relative_position", K, scope='key')
-        self._get_relative_embeddings(self.key_rel_pos_emb(K), True)
-        if self._heads_share:
-            outputs += tf.einsum("bhld,mld->bhlm", Q, sum(self._heads_share))
-        if self._heads_not_share:
-            outputs += tf.einsum("bhld,hmld->bhlm", Q, sum(self._heads_not_share))
+        scope = 'key'
+        self.rel_pos_emb[scope](K, training=training)
+        with suppress(AttributeError):
+            outputs += tf.einsum("bhld,mld->bhlm", Q, sum(self._heads_share_emb[scope][True]))
+        with suppress(AttributeError):
+            outputs += tf.einsum("bhld,hmld->bhlm", Q, sum(self._heads_share_emb[scope][False]))
 
         # Scale outputs by sqrt(q_size)
         if self.scaling:
@@ -227,18 +241,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # Calculate weighted values
         outputs = tf.matmul(weights_dropped, V)  # [batch_size, num_heads, q_size, emb_size/num_heads]
 
-        self._heads_share = []
-        self._heads_not_share = []
-        # TODO: Refactor the line below
-        if self.config['relative_position'] and self.config['relative_position']['add_relative_to_values']:
-
-            # self._prepare_relative_embeddings("relative_position", V, scope='value')
-            self._get_relative_embeddings(self.value_rel_pos_emb(V), True)
-
-            if self._heads_share:
-                outputs += tf.einsum("bhlm,mld->bhld", weights_dropped, sum(self._heads_share))
-            if self._heads_not_share:
-                outputs += tf.einsum("bhlm,hmld->bhld", weights_dropped, sum(self._heads_not_share))
+        # TODO: Next `drop_rate`
+        # Add relative position embeddings to the values
+        scope = 'value'
+        self.rel_pos_emb[scope](V, training=training)
+        with suppress(AttributeError):
+            outputs += tf.einsum("bhlm,mld->bhld", weights_dropped, sum(self._heads_share_emb[scope][True]))
+        with suppress(AttributeError):
+            outputs += tf.einsum("bhlm,hmld->bhld", weights_dropped, sum(self._heads_share_emb[scope][False]))
 
         # Reshape
         outputs = tf.concat(tf.split(outputs, self.attn_heads, axis=1), axis=-1)[:, 0]  # [batch_size, q_size, emb_size]
@@ -270,16 +280,20 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                 relative["heads_share"],
                 "{}_embeddings_{}".format(scope, relative_name))
 
-            return relative_embeddings_func
+            self._track_emb.append(relative_embeddings_func)
 
-    def _get_relative_embeddings(self, relative_embeddings, heads_share, func=None):
-        if func:
-            relative_embeddings = func(relative_embeddings)
+            def _helper(inputs, training=True):
+                relative_embeddings = relative_embeddings_func(inputs)
 
-        if heads_share:
-            self._heads_share.append(relative_embeddings)
-        else:
-            self._heads_not_share.append(relative_embeddings)
+                noise_shape = (tf.shape(relative_embeddings)[0], *[1]*(len(relative_embeddings.shape) - 1))
+                set_dropout = tf.keras.layers.Dropout(relative["drop_rate"], noise_shape)
+                dropout = self._track_dropout.setdefault(relative_name, set_dropout)
+
+                self._heads_share_emb[scope][relative["heads_share"]] += [dropout(relative_embeddings, training=training)]
+
+                return relative_embeddings
+
+            return _helper
 
 
 class FeedForwardNetwork(tf.keras.layers.Layer):
