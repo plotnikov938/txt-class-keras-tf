@@ -1,8 +1,34 @@
+import json
 from itertools import product
+import importlib.util
+from contextlib import suppress
 
 from matplotlib import pyplot as plt
 import tensorflow as tf
 import numpy as np
+
+
+def load_json(filename):
+    """Reads JSON string containing the tokenizer configuration."""
+
+    with suppress(FileNotFoundError):
+        with open(filename, 'r') as f:
+            return json.load(f)
+
+
+def save_json(filename, json_string):
+    """Writes JSON string containing the tokenizer configuration."""
+
+    with open(filename, 'w') as f:
+        json.dump(json_string, f)
+
+
+def get_config(path):
+    spec = importlib.util.spec_from_file_location("config", path)
+    config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config)
+
+    return config.load()
 
 
 def minmax(array):
