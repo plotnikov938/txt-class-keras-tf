@@ -260,7 +260,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def _check(self, relative):
 
-        if relative is None:
+        if relative["direction"] is None:
             return False
 
         # Convert to list if needed
