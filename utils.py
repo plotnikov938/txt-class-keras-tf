@@ -1,5 +1,3 @@
-import operator
-import functools
 from itertools import product
 
 from matplotlib import pyplot as plt
@@ -18,65 +16,161 @@ def softmax(x):
 
 
 # TODO: Docs
-def plot_attn(sentence, attention, steps=None, layers=None, heads=None):
+def plot_graph(ax, sentense, attention_weights, threshold=0.1, color_text="darkorange", color_line="deepskyblue", title=None):
 
-    def get_indexes(dim, attn):
+        cell_width = 212
+        cell_height = 22
+        swatch_width = (len(max(sentense, key=len)) * 4)
+        margin = 45
+        swatch_end_x = margin + swatch_width
+
+        ax.set_xlim(-cell_width // 2, cell_width // 2)
+
+        ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
+        for pos in ['right', 'top', 'bottom', 'left']:
+            ax.spines[pos].set_visible(False)
+
+        ax.set_xlabel(title, fontsize=20, va='top')
+
+        attention_weights = minmax(attention_weights[::-1, ::-1])
+        attention_weights[attention_weights < threshold] = 0
+
+        def plot_sentense_col(text_pos_x, swatch_end_x, alphas, color="deepskyblue", ha="left"):
+            for row, (word, alpha) in enumerate(zip(sentense[::-1], alphas)):
+                y = row * cell_height
+
+                ax.text(text_pos_x, y, word, fontsize=14,  # word
+                        horizontalalignment=ha,
+                        verticalalignment='center')
+
+                ax.hlines(y, text_pos_x, swatch_end_x,
+                          color=color, linewidth=18, alpha=alpha)
+
+        def plot_connections(color):
+            grid = np.ndindex(attention_weights.shape)
+            for row, col in grid:
+                intensity = attention_weights[row, col]
+                if intensity > threshold:
+                    intensity = (intensity - threshold) / (1 - threshold)
+                    ax.plot([margin - 2, -margin + 2], [col * cell_height, row * cell_height],
+                            alpha=intensity,
+                            color=color, lw=intensity*6,
+                            solid_capstyle='butt')
+
+        attn_sum_1 = attention_weights.sum(1)
+        plot_sentense_col(-margin, -swatch_end_x,
+                          alphas=minmax(attn_sum_1),
+                          color=color_text,
+                          ha="right")
+        plot_sentense_col(margin, swatch_end_x,
+                          alphas=minmax(softmax((attention_weights*softmax(attn_sum_1[..., None])).sum(0))),
+                          color=color_text,
+                          ha="left")
+
+        plot_connections(color_line)
+
+
+# TODO: Docs
+def plot_heatmap(ax, sentence, attn_weights, title=None):
+
+    # plot the attention weights
+    ax.matshow(attn_weights / 255, cmap='viridis')
+
+    fontdict = {'fontsize': 10}
+
+    ax.set_xticks(range(len(sentence)))
+    ax.set_yticks(range(len(sentence)))
+
+    ax.set_ylim(len(sentence) - 1.5, -0.5)
+
+    xticklabels = ax.set_xticklabels(
+        sentence, fontdict=fontdict, rotation=90)
+    # input(xticklabels[0].set_bbox(dict(facecolor='red', alpha=0.5)))
+
+    ax.set_yticklabels(
+        sentence, fontdict=fontdict)
+
+    ax.set_xlabel(title, fontsize=16, va='top')
+
+
+def plot_attn(sentence, attention, plot="graph", steps=None, layers=None, heads=None):
+
+    def get_indexes(dims_max_size):
         """
         Returns:
-            A list of indexes for outer dimension based on the value of `dim`
-            A list `attn` with a flattened outer dim
+            A list of indexes for three outer dimension (step, layer, head).
         """
 
-        if dim is None:
-            dim = list(range(1, len(attn) + 1))
+        for dim, max_size in zip([steps, layers, heads], dims_max_size):
+            index = list(range(max_size)) if dim is None else dim
 
-        if not isinstance(dim, (tuple, list)):
-            dim = [dim]
+            if not isinstance(index, (tuple, list)):
+                index = [index]
 
-        attn_flattened = functools.reduce(operator.iconcat, attn, [])
+            yield index
 
-        return dim, attn_flattened
-
-    steps, attention = get_indexes(steps, attention)
-    layers, attention = get_indexes(layers, attention)
-    heads, attention = get_indexes(heads, attention)
+    assert isinstance(sentence, str)
 
     sentence = sentence.split(' ')
 
-    # TODO: size
-    fig = plt.figure(figsize=(16, 8))
+    attention = np.asarray(attention)
+    attention = np.squeeze(attention, axis=-4)
 
-    for attn_num, ((step, layer, head), attn_weights) in enumerate(zip(product(steps, layers, heads), attention)):
+    steps, layers, heads = get_indexes(dims_max_size=attention.shape[:3])
+
+    def get_suplots_shape(plots_total):
+        """A helper function that returns subplots shape for the given total subplots"""
+
+        ratio_prev = plots_total
+        for height in range(1, plots_total + 1):
+            if plots_total % height:
+                continue
+
+            width = plots_total / height
+            ratio = abs(width / height - 2)
+
+            if ratio >= ratio_prev:
+                height = height_prev
+                width = plots_total / height
+                break
+
+            ratio_prev = ratio
+            height_prev = height
+
+        return height, width
+
+    plots_total = np.prod([*map(len, [steps, layers, heads])])
+    subplots = get_suplots_shape(plots_total)
+
+    if plot == 'graph':
+        plot_size = [7, attention.shape[-1]*0.3125]
+    elif plot == "heatmap":
+        plot_size = [6, 6]
+
+    fig = plt.figure(figsize=np.multiply(subplots[::-1], plot_size))
+
+    for attn_num, (step, layer, head) in enumerate(product(steps, layers, heads)):
+
+        attn_weights = attention[step, layer, head].T
+
         try:
             attn_weights = np.squeeze(attn_weights, axis=0)
         except ValueError:
             pass
 
         # TODO: size
-        ax = fig.add_subplot(2, 4, attn_num + 1)
+        ax = fig.add_subplot(*subplots, attn_num + 1)
 
-        # plot the attention weights
-        ax.matshow(attn_weights.T / 255, cmap='viridis')
+        title = 'Step {}, Layer {}, Head {}'.format(step + 1, layer + 1, head + 1)
 
-        fontdict = {'fontsize': 8}
-
-        ax.set_xticks(range(len(sentence)))
-        ax.set_yticks(range(len(sentence)))
-
-        ax.set_ylim(len(sentence) - 1.5, -0.5)
-
-        # TODO: sentence as text obj with colors
-        xticklabels = ax.set_xticklabels(
-            sentence, fontdict=fontdict, rotation=90)
-        # input(xticklabels[0].set_bbox(dict(facecolor='red', alpha=0.5)))
-
-        ax.set_yticklabels(
-            sentence, fontdict=fontdict)
-
-        ax.set_xlabel('Step {}, Layer {}, Head {}'.format(step, layer, head))
+        if plot == 'graph':
+            plot_graph(ax, sentence, attn_weights, threshold=0.65, title=title)
+        elif plot == "heatmap":
+            plot_heatmap(ax, sentence, attn_weights, title=title)
 
     plt.tight_layout()
-    plt.show()
+
+    return fig
 
 
 def sinusoidal_encoding(max_len, embedding_size, reverse=False):
