@@ -184,7 +184,6 @@ def plot_attn(sentence, attention, plot="graph", steps=None, layers=None, heads=
         except ValueError:
             pass
 
-        # TODO: size
         ax = fig.add_subplot(*subplots, attn_num + 1)
 
         title = 'Step {}, Layer {}, Head {}'.format(step + 1, layer + 1, head + 1)

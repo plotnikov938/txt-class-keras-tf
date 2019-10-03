@@ -84,22 +84,11 @@ if __name__ == '__main__':
         tokenizer = None
 
     # Preprocess the data
-    # x_train, x_test = preprocess_dataset(x_train, x_test, maxlen=config["maxlen"], tokenizer=tokenizer)
-    #
-    # # Save tokenizer
-    # tokenizer_config = tokenizer.to_json()
-    # save_json(path_tokenizer_config, tokenizer_config)
-    #
-    # np.savez('dataset_tokenized.npz', x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test)
+    x_train, x_test = preprocess_dataset(x_train, x_test, maxlen=config["maxlen"], tokenizer=tokenizer)
 
-    # TODO: Remove
-    arr = np.load('dataset_tokenized.npz')
-    x_train, y_train, x_test, y_test = arr['x_train'], arr['y_train'], arr['x_test'], arr['y_test']
-    print("train size: ", len(x_train), "test size: ", len(x_test))
-    print("vocab size: ", config["vocab_size"])
-
-    # TODO: Delete
-    x_train, x_test = x_train[:, :config["maxlen"]], x_test[:, :config["maxlen"]]
+    # Save tokenizer
+    tokenizer_config = tokenizer.to_json()
+    save_json(path_tokenizer_config, tokenizer_config)
 
     min_class = min(y_train.min(), y_test.min())
     y_train, y_test = y_train - min_class, y_test - min_class
@@ -111,7 +100,7 @@ if __name__ == '__main__':
     training_step = build_step(classifier, training=True)
     evaluating_step = build_step(classifier, training=False)
 
-    # Split validation set
+    # Split to train and validation sets
     (x_train, y_train), (x_val, y_val) = split_dataset(x_train, y_train, 0.02)
 
     # Create the datasets

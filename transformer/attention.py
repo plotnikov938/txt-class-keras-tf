@@ -241,7 +241,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # Calculate weighted values
         outputs = tf.matmul(weights_dropped, V)  # [batch_size, num_heads, q_size, emb_size/num_heads]
 
-        # TODO: Next `drop_rate`
         # Add relative position embeddings to the values
         scope = 'value'
         self.rel_pos_emb[scope](V, training=training)
@@ -289,7 +288,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
                 set_dropout = tf.keras.layers.Dropout(relative["drop_rate"], noise_shape)
                 dropout = self._track_dropout.setdefault(relative_name, set_dropout)
 
-                self._heads_share_emb[scope][relative["heads_share"]] += [dropout(relative_embeddings, training=training)]
+                self._heads_share_emb[scope][relative["heads_share"]] += \
+                    [dropout(relative_embeddings, training=training)]
 
                 return relative_embeddings
 

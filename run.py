@@ -79,10 +79,7 @@ if __name__ == "__main__":
             parser.print_help(sys.stderr)
             sys.exit(1)
 
-    args = parser.parse_args('--text sdf -s -p graph'.split(' '))
-    args.text = "Spider-Man Family (later retitled The Amazing Spider-Man Family) is a comic book series published by Marvel Comics"
-    # args = parser.parse_args('--text asd -s -p heatmap --save-plot heatmap_building.png'.split(' '))
-    # args.text = "The Edificio Bel Air is a skyscraper in the city of Puerto de la Cruz on the Tenerife Canary Islands Spain"
+    args = parser.parse_args()
 
     # Load config
     config = get_config(args.path_config)
@@ -97,10 +94,10 @@ if __name__ == "__main__":
     evaluate = build_step(model)
 
     # Load the weights
-    model.load_weights(config['path_project'] + 'weights/classifier - копия.h5')
+    model.load_weights(config['path_project'] + 'weights/classifier.h5')
 
     # Load the tokenizer
-    path_tokenizer_config = config['path_project']  + config['path_tokenizer_config']
+    path_tokenizer_config = config['path_project'] + config['path_tokenizer_config']
     tokenizer_config = load_json(path_tokenizer_config)
     tokenizer = tokenizer_from_json(tokenizer_config) if tokenizer_config else None
     assert tokenizer is not None  # tokenizer must exist
