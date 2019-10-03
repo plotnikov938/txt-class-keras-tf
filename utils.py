@@ -140,7 +140,7 @@ def plot_attn(sentence, attention, plot="graph", steps=None, layers=None, heads=
     sentence = sentence.split(' ')
 
     attention = np.asarray(attention)
-    attention = np.squeeze(attention, axis=-4)
+    attention = np.squeeze(attention, axis=0)
 
     steps, layers, heads = get_indexes(dims_max_size=attention.shape[:3])
 
