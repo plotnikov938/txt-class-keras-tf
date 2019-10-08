@@ -8,8 +8,8 @@ used both separately and jointly to obtain better results.
 
 ---
 This project is the part of a datascience portfolio. Other projects can be found here:
-* [Implementation of progressive groving of GANs with Keras + tensorflow](link1)
-* [Implementation of PPO algorithm for reinforcement learning with Keras + tensorflow](link2)
+* [Implementation of progressive groving of GANs with Keras + tensorflow](https://github.com/plotnikov938/pg_gans_keras_tf)
+* [Implementation of PPO algorithm for reinforcement learning with Keras + tensorflow](https://github.com/plotnikov938/ppo_keras_tf)
 ---
 
 ## Table of Contents
@@ -25,10 +25,10 @@ Make sure you use Python 3.
 
 Clone this repo to your local machine:
 ```
-$ git clone https://github.com/myrepo/txt_class_keras_tf
+$ git clone https://github.com/plotnikov938/txt_class_keras_tf.git
 ```
 Download the [DBpedia dataset](https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz) 
-and extract `dbpedia_csv.tar.gz` into the `txt_class_keras_tf/dbpedia_csv` directory.
+and extract `dbpedia_csv.tar.gz` into the `txt_class_keras_tf/dbpedia_csv` folder.
 
 Go into the project directory:
 ```
@@ -96,7 +96,8 @@ Predicted text label: Building</samp></pre>
     <img src="results/heatmap_building.png" width="640"\>
 </p>
 
-##Resources
+## Resources
+
 1. [Matrix Capsules with EM Routing](https://openreview.net/forum?id=HJWLfGWRb)
 2. [Dynamic Routing Between Capsules](https://arxiv.org/abs/1710.09829)
 3. [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
