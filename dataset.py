@@ -66,7 +66,7 @@ def preprocess_dataset(train, test, maxlen, tokenizer=None, max_words=50000):
     train_padded = pad_sequences(train_seq, maxlen=maxlen, padding='post', truncating='post')
     test_padded = pad_sequences(test_seq, maxlen=maxlen, padding='post', truncating='post')
 
-    return train_padded, test_padded
+    return train_padded, test_padded, tokenizer
 
 
 def split_dataset(x, y, dev_ratio):

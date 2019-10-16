@@ -84,7 +84,7 @@ if __name__ == '__main__':
         tokenizer = None
 
     # Preprocess the data
-    x_train, x_test = preprocess_dataset(x_train, x_test, maxlen=config["maxlen"], tokenizer=tokenizer)
+    x_train, x_test, tokenizer = preprocess_dataset(x_train, x_test, maxlen=config["maxlen"], tokenizer=tokenizer)
 
     # Save tokenizer
     tokenizer_config = tokenizer.to_json()
