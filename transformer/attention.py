@@ -193,9 +193,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         if self.emb_size is None:
             self.emb_size = input_shapes[-1]
 
-        self.dense_init = [Dense(self.emb_size) for _ in range(3)]
+        self.dense_init = [Dense(self.emb_size, use_bias=False) for _ in range(3)]
         self.drop = Dropout(rate=self.drop_rate)
-        self.dense_final = Dense(input_shapes[-1], None)
+        self.dense_final = Dense(input_shapes[-1], None, use_bias=False)
 
         self._track_emb = []
         self._track_dropout = {}
