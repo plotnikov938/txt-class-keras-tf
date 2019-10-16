@@ -8,8 +8,8 @@ used both separately and jointly to obtain better results.
 
 ---
 This project is the part of a datascience portfolio. Other projects can be found here:
-* [Implementation of progressive groving of GANs with Keras + tensorflow](https://github.com/plotnikov938/pg_gans_keras_tf)
-* [Implementation of PPO algorithm for reinforcement learning with Keras + tensorflow](https://github.com/plotnikov938/ppo_keras_tf)
+* [Implementation of progressive groving of GANs with Keras + tensorflow](https://github.com/plotnikov938/pg-gans-keras-tf)
+* [Implementation of PPO algorithm for reinforcement learning with Keras + tensorflow](https://github.com/plotnikov938/ppo-keras-tf)
 ---
 
 ## Table of Contents
@@ -25,14 +25,14 @@ Make sure you use Python 3.
 
 Clone this repo to your local machine:
 ```
-$ git clone https://github.com/plotnikov938/txt_class_keras_tf.git
+$ git clone https://github.com/plotnikov938/txt-class-keras-tf.git
 ```
 Download the [DBpedia dataset](https://github.com/le-scientifique/torchDatasets/raw/master/dbpedia_csv.tar.gz) 
-and extract `dbpedia_csv.tar.gz` into the `txt_class_keras_tf/dbpedia_csv` folder.
+and extract `dbpedia_csv.tar.gz` into the `txt-class-keras-tf/dbpedia_csv` folder.
 
 Go into the project directory:
 ```
-$ cd txt_class_keras_tf/
+$ cd txt-class-keras-tf/
 ```
 Create a virtual environment if needed:
 ```
@@ -105,5 +105,5 @@ Predicted text label: Building</samp></pre>
 5. [Music Transformer](https://arxiv.org/abs/1809.04281)
 
 ## Contacts
-Please contact me if you have any questions:  [plotnikov.ilia938@gmail.com](mailto:plotnikov.ilia938@gmail.com)
+Please feel free to contact me if you have any questions:  [plotnikov.ilia938@gmail.com](mailto:plotnikov.ilia938@gmail.com)
 
