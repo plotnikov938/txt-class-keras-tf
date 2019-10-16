@@ -8,7 +8,7 @@ used both separately and jointly to obtain better results.
 
 ---
 This project is the part of a datascience portfolio. Other projects can be found here:
-* [Implementation of progressive groving of GANs with Keras + tensorflow](https://github.com/plotnikov938/pg-gans-keras-tf)
+* [Implementation of progressive growing of GANs with Keras + tensorflow](https://github.com/plotnikov938/pg-gans-keras-tf)
 * [Implementation of PPO algorithm for reinforcement learning with Keras + tensorflow](https://github.com/plotnikov938/ppo-keras-tf)
 ---
 
