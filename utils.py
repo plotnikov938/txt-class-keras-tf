@@ -219,7 +219,6 @@ def sinusoidal_encoding(max_len, embedding_size, reverse=False):
 class LayerNormalization(tf.keras.layers.Layer):
     def __init__(self, epsilon=1e-8):
         super(LayerNormalization, self).__init__()
-        self.init = False
 
         self.epsilon = epsilon
 
@@ -227,18 +226,15 @@ class LayerNormalization(tf.keras.layers.Layer):
         self.beta = None
         self.gamma = None
 
+    def build(self, input_shapes):
+        params_shape = input_shapes[-1:]
+
+        self.beta = self.add_weight('beta', shape=params_shape,
+                                    dtype=self.dtype, initializer='zeros', trainable=True)
+        self.gamma = self.add_weight('gamma', shape=params_shape,
+                                     dtype=self.dtype, initializer='ones', trainable=True)
+
     def call(self, inputs, *args, **kwargs):
-
-        if not self.init:
-            inputs_shape = inputs.get_shape()
-            params_shape = inputs_shape[-1:]
-
-            self.beta = self.add_weight('beta', shape=params_shape,
-                                        dtype=self.dtype, initializer='zeros', trainable=True)
-            self.gamma = self.add_weight('gamma', shape=params_shape,
-                                         dtype=self.dtype, initializer='ones', trainable=True)
-
-            self.init = True
 
         mean, variance = tf.nn.moments(inputs, [-1], keep_dims=True)
 
